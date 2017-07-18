@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+import requests, sys, re
+
+# http://horriblesubs.info/shows/ 
+
+def usage():
+    script_name=sys.argv[0].split("/")[-1]
+    print("")
+    print( "Usage:  ")
+    print( "    "+script_name+" [URL | show name] [ (1080p), 720p, 480p]")
+    print( "  Defaults to using 1080p if no resolution is specified.  Send either the full shows URL or just the name as it appears after /shows/")
+    print("")
+    print ("Examples: ")
+    print(" "+script_name+" \"http://horriblesubs.info/shows/new-game-2\" \"720p\"")
+    print(" "+script_name+" \"new-game-2\"")
+    print("")
+
+def get_url_text(url):
+    r = requests.get(url);
+    if( r.status_code != requests.codes.ok):
+        r.raise_for_status()
+    
+    return r.text
+
+def get_show_id(url):
+    text=get_url_text(url)
+    show_id=re.search('var hs_showid = (.*?);', text).group(1).strip();
+    
+    return show_id
+
+def clean_magnet_links(dirty_link):
+    return re.findall("magnet:.*?\">", dirty_link)[0].strip('">');
+
+def get_magnet_links(url, resolution="1080p"):
+    show_id = get_show_id(url)
+    text=get_url_text("http://horriblesubs.info/lib/getshows.php?type=show&showid="+str(show_id))
+    
+    return list( map( clean_magnet_links, re.findall('\['+str(resolution)+'\].*?Torrent', text) ) )
+
+def main(url, resolution="1080p"):
+    for link in get_magnet_links(url, resolution):
+        print (link)
+
+def sanity_check_args(args):
+
+
+    if len(args) < 2:
+        print("ERROR: No horriblesubs show url specified")
+        usage()
+        sys.exit(1)
+
+    if "horriblesubs.info/shows" not in args[1]:
+        url="http://horriblesubs.info/shows/"+str(args[1]);
+
+    resolution="1080p"
+
+
+    if len(args) == 3:
+        resolution=args[2]
+
+    if resolution not in ["1080p", "720p" "480p"]:
+        print ("ERROR: Accepted resolutions are '1080p' '720p' or '480p' ");
+        usage()
+        sys.exit(1);
+
+    return url, resolution
+
+
+
+url, resolution = sanity_check_args(sys.argv)
+main( url, resolution );
+
