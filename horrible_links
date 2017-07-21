@@ -49,6 +49,7 @@ def sanity_check_args(args):
         usage()
         sys.exit(1)
 
+    url = args[1]
     if "horriblesubs.info/shows" not in args[1]:
         url="http://horriblesubs.info/shows/"+str(args[1]);
 
